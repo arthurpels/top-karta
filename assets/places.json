@@ -1,0 +1,101 @@
+[
+  {
+    "id": "main_cafeteria",
+    "name": "Главная столовая",
+    "type": "cafeteria",
+    "grid_row": 90,
+    "grid_col": 146,
+    "open_time": "09:00",
+    "close_time": "17:00",
+    "price_level": "low",
+    "menu": ["full_meal", "soup", "salad", "tea", "compote"]
+  },
+  {
+    "id": "starbooks",
+    "name": "Starbooks",
+    "type": "cafe",
+    "grid_row": 84,
+    "grid_col": 130,
+    "open_time": "08:00",
+    "close_time": "20:00",
+    "price_level": "high",
+    "menu": ["coffee", "tea", "sandwich", "cake"]
+  },
+  {
+    "id": "siberian_pancakes",
+    "name": "Сибирские блины",
+    "type": "cafe",
+    "grid_row": 95,
+    "grid_col": 141,
+    "open_time": "08:00",
+    "close_time": "20:00",
+    "price_level": "medium",
+    "menu": ["pancakes", "tea", "juice", "coffee"]
+  },
+  {
+    "id": "yarche",
+    "name": "Ярче",
+    "type": "shop",
+    "grid_row": 3,
+    "grid_col": 302,
+    "open_time": "07:00",
+    "close_time": "23:00",
+    "price_level": "low",
+    "menu": ["snack", "drink", "sandwich", "disposable_utensils"]
+  },
+  {
+    "id": "bus_stop_coffee",
+    "name": "Кофейня у остановки",
+    "type": "cafe",
+    "grid_row": 20,
+    "grid_col": 222,
+    "open_time": "08:00",
+    "close_time": "20:00",
+    "price_level": "medium",
+    "menu": ["coffee", "tea", "pastry"]
+  },
+  {
+    "id": "second_building_cafe",
+    "name": "Кафе второго корпуса",
+    "type": "cafe",
+    "grid_row": 125,
+    "grid_col": 107,
+    "open_time": "09:00",
+    "close_time": "17:00",
+    "price_level": "medium",
+    "menu": ["coffee", "tea", "snack", "full_meal"]
+  },
+  {
+    "id": "vending_machine",
+    "name": "Вендинговый автомат",
+    "type": "vending",
+    "grid_row": 125,
+    "grid_col": 107,
+    "open_time": "00:00",
+    "close_time": "23:59",
+    "price_level": "low",
+    "menu": ["snack", "drink", "coffee"]
+  },
+  {
+    "id": "rostics",
+    "name": "Rostics",
+    "type": "cafe",
+    "grid_row": 104,
+    "grid_col": 249,
+    "open_time": "10:00",
+    "close_time": "20:00",
+    "price_level": "medium",
+    "menu": ["coffee", "dessert", "sandwich"]
+  },
+  {
+    "id": "abrikos",
+    "name": "Абрикос",
+    "type": "shop",
+    "grid_row": 7,
+    "grid_col": 15,
+    "open_time": "08:00",
+    "close_time": "23:00",
+    "price_level": "medium",
+    "menu": ["snack", "drink", "sandwich", "disposable_utensils"]
+  }
+]

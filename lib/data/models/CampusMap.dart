@@ -38,5 +38,8 @@ class CampusMap{
     grid: grid,
   );
   }
+  bool isInBounds(int row, int col) {
+    return row >= 0 && row < rows && col >= 0 && col < cols;
+  }
   GridCell getCell(int row, int col) => grid[row][col];
 }

@@ -33,6 +33,7 @@ class PathNode {
 
 class AStarPathFinder {
   final CampusMap config;
+  int lastIterations = 0;
 
   AStarPathFinder({
     required this.config,
@@ -56,13 +57,14 @@ class AStarPathFinder {
     );
 
     openSet.add(startNode);
-    
+    lastIterations = 0;
 
     while (openSet.isNotEmpty) {
+      lastIterations++;
       final current = openSet.removeFirst();
 
       if (current.row == endRow && current.col == endCol) {
-        debugPrint('Путь найден!');
+        debugPrint('Путь найден за $lastIterations итераций!');
         return _reconstructPath(current);
       }
 
@@ -89,7 +91,7 @@ class AStarPathFinder {
       }
     }
 
-    debugPrint('Путь не найден!');
+    debugPrint('Путь не найден! Пройдено итераций: $lastIterations');
     return null;
   }
 

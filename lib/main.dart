@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'ui/widgets/map_screen.dart';
 void main() {
   runApp(MyApp());
 }
@@ -8,10 +8,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Color(0xFF0051A0),
-          title: Row(
+      home: Builder(
+        builder: (context) {
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: const Color(0xFF0051A0),
+              title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.map, color: Colors.white),
@@ -45,6 +47,10 @@ class MyApp extends StatelessWidget {
                     elevation: 2,
                   ),
                   onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MapScreen()),
+                    );
                   },
                   child: const Text(
                     'открыть карту',
@@ -58,7 +64,9 @@ class MyApp extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
+     },
+    ),
+   );
   }
 }

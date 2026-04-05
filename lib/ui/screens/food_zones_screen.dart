@@ -192,7 +192,6 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
       ),
       body: Stack(
         children: [
-          // Карта
           GridMapWidget(
             map: _map!,
             transformationController: _transformationController,
@@ -224,7 +223,6 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Центровка
           if (_map != null) {
             final w = _map!.cellSize.toDouble();
             _transformationController.value = Matrix4.identity()

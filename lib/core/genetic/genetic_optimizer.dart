@@ -18,17 +18,22 @@ class GeneticOptimizer {
     this.tournamentSize = 5,
   });
 
-  RouteChromosome optimize(List<Place> places, int generations) {
+  RouteChromosome optimize(List<Place> places, int generations, {void Function(int generation, RouteChromosome best)? onProgress}) {
     if (places.length < 2) return RouteChromosome(places);
 
     _population = _initPopulation(places);
 
     for (int i = 0; i < generations; i++) {
       _population = _evolve();
+      if (onProgress != null) {
+        final currentBest = _population.reduce((a, b) => a.fitness < b.fitness ? a : b);
+        onProgress(i + 1, currentBest);
+      }
     }
 
     return _population.reduce((a, b) => a.fitness < b.fitness ? a : b);
   }
+
 
   List<RouteChromosome> _initPopulation(List<Place> places) {
     return List.generate(populationSize, (_) {
@@ -40,7 +45,6 @@ class GeneticOptimizer {
   List<RouteChromosome> _evolve() {
     final newPopulation = <RouteChromosome>[];
 
-    // Элитизм: сохраняем лучшего
     final best = _population.reduce((a, b) => a.fitness < b.fitness ? a : b);
     newPopulation.add(best);
 
@@ -83,12 +87,10 @@ class GeneticOptimizer {
 
     final childSeq = List<Place?>.filled(len, null);
     
-    // Копируем сегмент от первого родителя
     for (int i = start; i <= end; i++) {
       childSeq[i] = s1[i];
     }
 
-    // Заполняем остальное из второго родителя, сохраняя порядок
     int childIdx = (end + 1) % len;
     int parentIdx = (end + 1) % len;
 

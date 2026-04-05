@@ -22,14 +22,11 @@ class RouteChromosome {
       totalDistance += _distance(sequence[i], sequence[i + 1]);
     }
     
-    // В GA для минимизации мы часто используем 1/расстояние, 
-    // но здесь мы можем просто минимизировать расстояние напрямую в селекции.
     return totalDistance;
   }
 
   double _distance(Place a, Place b) {
-    // Используем Евклидово расстояние для быстрых расчетов в GA. 
-    // Точный путь по A* будет рассчитан только для финального результата.
+
     return sqrt(pow(a.gridCol - b.gridCol, 2) + pow(a.gridRow - b.gridRow, 2));
   }
 

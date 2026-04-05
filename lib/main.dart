@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'ui/screens/food_zones_screen.dart';
 import 'ui/screens/navigation_screen.dart';
+import 'ui/screens/meal_route_screen.dart';
 
 void main() {
   runApp(const TopKartaApp());
@@ -39,6 +40,7 @@ class _MainScreenState extends State<MainScreen> {
   static const List<Widget> _pages = <Widget>[
     FoodZonesScreen(),
     NavigationScreen(),
+    MealRouteScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -61,11 +63,18 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.map),
             label: 'Навигация',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_basket),
+            label: 'Маршрут',
+          ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: const Color(0xFF005AAB),
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
         onTap: _onItemTapped,
       ),
     );
   }
-}
+}

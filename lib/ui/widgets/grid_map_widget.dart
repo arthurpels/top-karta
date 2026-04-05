@@ -3,6 +3,7 @@ import '../../data/models/CampusMap.dart';
 import 'pixel_canvas.dart';
 
 class GridMapWidget extends StatelessWidget {
+  final CustomPainter? customPainter;
   final CampusMap map;
   final List<Widget> markers;
   final TransformationController? transformationController;
@@ -14,6 +15,7 @@ class GridMapWidget extends StatelessWidget {
     this.markers = const [],
     this.transformationController,
     this.useRealMap = true,
+    this.customPainter,
   });
 
   @override
@@ -46,11 +48,20 @@ class GridMapWidget extends StatelessWidget {
                 size: Size(width, height),
                 painter: PixelCanvas(map: map),
               ),
+            
+            if (customPainter != null)
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: customPainter,
+                ),
+              ),
+              
             ...markers,
           ],
         ),
       ),
     );
+
   }
 }
 

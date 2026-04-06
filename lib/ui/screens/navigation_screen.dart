@@ -173,9 +173,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_map == null) {
@@ -194,8 +192,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(_animateSearch ? Icons.play_circle : Icons.play_disabled),
-            tooltip: _animateSearch ? 'Анимация включена' : 'Анимация выключена',
+            icon: Icon(
+              _animateSearch ? Icons.play_circle : Icons.play_disabled,
+            ),
+            tooltip: _animateSearch
+                ? 'Анимация включена'
+                : 'Анимация выключена',
             onPressed: () => setState(() => _animateSearch = !_animateSearch),
           ),
           IconButton(
@@ -237,7 +239,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
                           ),
                         ),
 
-                        if (_searchOpenSet.isNotEmpty || _searchClosedSet.isNotEmpty)
+                        if (_searchOpenSet.isNotEmpty ||
+                            _searchClosedSet.isNotEmpty)
                           CustomPaint(
                             size: Size(mapWidth, mapHeight),
                             painter: SearchPainter(
@@ -260,10 +263,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         if (_path != null)
                           CustomPaint(
                             size: Size(mapWidth, mapHeight),
-                            painter: _PathPainter(
-                              path: _path!,
-                              cellSize: w,
-                            ),
+                            painter: _PathPainter(path: _path!, cellSize: w),
                           ),
 
                         if (_startPoint != null)
@@ -329,13 +329,13 @@ class _NavigationScreenState extends State<NavigationScreen> {
                             _path != null
                                 ? Icons.check_circle
                                 : (_endPoint != null
-                                    ? Icons.error_outline
-                                    : Icons.touch_app),
+                                      ? Icons.error_outline
+                                      : Icons.touch_app),
                             color: _path != null
                                 ? Colors.green
                                 : (_endPoint != null
-                                    ? Colors.red
-                                    : const Color(0xFF005AAB)),
+                                      ? Colors.red
+                                      : const Color(0xFF005AAB)),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -445,11 +445,7 @@ class _MapPin extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _MapPin({
-    required this.color,
-    required this.icon,
-    required this.label,
-  });
+  const _MapPin({required this.color, required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {

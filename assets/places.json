@@ -69,7 +69,7 @@
     "name": "Кофейня у остановки",
     "type": "cafe",
     "grid_row": 18,
-    "grid_col": 214,
+    "grid_col": 217,
     "open_time": "08:00",
     "close_time": "20:00",
     "price_level": "medium",

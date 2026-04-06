@@ -35,10 +35,7 @@ class PixelCanvas extends CustomPainter {
             paint.color = Colors.blueGrey;
         }
 
-        canvas.drawRect(
-          Rect.fromLTWH(c * w, r * w, w, w),
-          paint,
-        );
+        canvas.drawRect(Rect.fromLTWH(c * w, r * w, w, w), paint);
       }
     }
   }

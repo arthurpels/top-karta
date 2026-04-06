@@ -7,7 +7,6 @@ import '../../data/models/Place.dart';
 import '../../services/meal_route_service.dart';
 import '../../core/genetic/chromosome.dart';
 import '../widgets/grid_map_widget.dart';
-import '../widgets/navigation_painters.dart';
 import '../widgets/genetic_progress.dart';
 
 class MealRouteScreen extends StatefulWidget {
@@ -19,18 +18,18 @@ class MealRouteScreen extends StatefulWidget {
 
 class _MealRouteScreenState extends State<MealRouteScreen> {
   CampusMap? _map;
-  List<Place> _allPlaces = [];
   List<String> _allDishes = [];
   final Set<String> _selectedDishes = {};
   RouteChromosome? _bestRoute;
   MealRouteService? _routeService;
   bool _isLoading = true;
   bool _isOptimizing = false;
-  
+
   int _currentGeneration = 0;
   double _currentBestDistance = 0;
 
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
 
   @override
   void initState() {
@@ -47,8 +46,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
 
       setState(() {
         _map = mapData;
-        _allPlaces = places;
-        _routeService = MealRouteService(places);
+        _routeService = MealRouteService(places, mapData);
         _allDishes = _routeService!.getAllUniqueDishes();
         _isLoading = false;
 
@@ -75,30 +73,36 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
       _bestRoute = null;
     });
 
-    final result = await Future(() {
-      return _routeService!.findBestRoute(
+    try {
+      await for (final progress in _routeService!.optimizeRouteInIsolate(
         _selectedDishes.toList(),
-        onProgress: (gen, best) {
-          if (gen % 5 == 0 || gen == 100) {
-            setState(() {
-              _currentGeneration = gen;
-              _currentBestDistance = best.fitness;
-              _bestRoute = best;
-            });
-          }
-        },
-      );
-    });
-
-    setState(() {
-      _bestRoute = result;
-      _isOptimizing = false;
-    });
+      )) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _currentGeneration = progress.generation;
+          _currentBestDistance = progress.best.fitness;
+          _bestRoute = progress.best;
+          _isOptimizing = !progress.isDone;
+        });
+      }
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isOptimizing = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Ошибка расчёта маршрута: $e')));
+    }
   }
 
   List<Widget> _buildMarkers() {
     if (_map == null || _bestRoute == null) return [];
-    
+
     final w = _map!.cellSize.toDouble();
     final List<Widget> markers = [];
     final sequence = _bestRoute!.sequence;
@@ -120,14 +124,13 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                 ),
                 child: Text(
                   "${i + 1}. ${place.name}",
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const Icon(
-                Icons.location_on,
-                color: Colors.orange,
-                size: 32,
-              ),
+              const Icon(Icons.location_on, color: Colors.orange, size: 32),
             ],
           ),
         ),
@@ -160,16 +163,24 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                   map: _map!,
                   transformationController: _transformationController,
                   markers: _buildMarkers(),
-                  customPainter: _bestRoute != null 
-                    ? PathPainter(
-                        points: _bestRoute!.sequence.map((p) => Offset(p.gridCol.toDouble(), p.gridRow.toDouble())).toList(),
-                        cellSize: _map!.cellSize.toDouble(),
-                        color: Colors.orange,
-                      )
-                    : null,
+                  customPainter:
+                      (_bestRoute != null && _bestRoute!.astarPath.isNotEmpty)
+                      ? PathPainter(
+                          points: _bestRoute!.astarPath
+                              .map(
+                                (point) => Offset(
+                                  point.$2.toDouble(),
+                                  point.$1.toDouble(),
+                                ),
+                              )
+                              .toList(),
+                          cellSize: _map!.cellSize.toDouble(),
+                          color: Colors.orange,
+                        )
+                      : null,
                 )
               : const Center(child: Text("Ошибка загрузки карты")),
-          
+
           if (_bestRoute == null && !_isOptimizing)
             _buildDishSelector()
           else if (_isOptimizing)
@@ -197,10 +208,16 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                     children: [
                       Text(
                         "Оптимальный маршрут найден!",
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.orange[800], fontWeight: FontWeight.bold),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: Colors.orange[800],
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 4),
-                      Text("Заведений: ${_bestRoute!.sequence.length} | Расстояние: ${_bestRoute!.fitness.toStringAsFixed(1)} ед."),
+                      Text(
+                        "Заведений: ${_bestRoute!.sequence.length} | Расстояние: ${_bestRoute!.fitness.toStringAsFixed(1)} ед.",
+                      ),
                     ],
                   ),
                 ),
@@ -221,11 +238,20 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
           const SizedBox(height: 16),
           FloatingActionButton.extended(
             heroTag: 'opt',
-            onPressed: (_selectedDishes.isEmpty || _isOptimizing) ? null : _onOptimize,
+            onPressed: (_selectedDishes.isEmpty || _isOptimizing)
+                ? null
+                : _onOptimize,
             label: Text(_isOptimizing ? 'Считаем...' : 'Найти еду'),
-            icon: _isOptimizing 
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Icon(Icons.bolt),
+            icon: _isOptimizing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.bolt),
           ),
         ],
       ),
@@ -243,7 +269,11 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, -5),
+            ),
           ],
         ),
         padding: const EdgeInsets.all(20),
@@ -267,8 +297,11 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                       selected: isSelected,
                       onSelected: (val) {
                         setState(() {
-                          if (val) _selectedDishes.add(dish);
-                          else _selectedDishes.remove(dish);
+                          if (val) {
+                            _selectedDishes.add(dish);
+                          } else {
+                            _selectedDishes.remove(dish);
+                          }
                         });
                       },
                       selectedColor: Colors.orange.withValues(alpha: 0.3),
@@ -287,14 +320,19 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
   void _showRouteDetails() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) {
         return Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Машрут покупки", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text(
+                "Машрут покупки",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
               const Divider(),
               Flexible(
                 child: ListView.builder(
@@ -303,9 +341,17 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                   itemBuilder: (context, index) {
                     final p = _bestRoute!.sequence[index];
                     return ListTile(
-                      leading: CircleAvatar(backgroundColor: Colors.orange, child: Text("${index + 1}", style: const TextStyle(color: Colors.white))),
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.orange,
+                        child: Text(
+                          "${index + 1}",
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
                       title: Text(p.name),
-                      subtitle: Text("Меню: ${p.menu.where((d) => _selectedDishes.contains(d)).join(', ')}"),
+                      subtitle: Text(
+                        "Меню: ${p.menu.where((d) => _selectedDishes.contains(d)).join(', ')}",
+                      ),
                     );
                   },
                 ),
@@ -318,13 +364,16 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
   }
 }
 
-
 class PathPainter extends CustomPainter {
   final List<Offset> points;
   final double cellSize;
   final Color color;
 
-  PathPainter({required this.points, required this.cellSize, required this.color});
+  PathPainter({
+    required this.points,
+    required this.cellSize,
+    required this.color,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -337,30 +386,43 @@ class PathPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final path = Path();
-    path.moveTo(points[0].dx * cellSize, points[0].dy * cellSize);
+    final halfCell = cellSize / 2;
+    path.moveTo(
+      points[0].dx * cellSize + halfCell,
+      points[0].dy * cellSize + halfCell,
+    );
 
     for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].dx * cellSize, points[i].dy * cellSize);
+      path.lineTo(
+        points[i].dx * cellSize + halfCell,
+        points[i].dy * cellSize + halfCell,
+      );
     }
 
     canvas.drawPath(path, paint);
-    
+
     final arrowPaint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-      
+
     for (int i = 0; i < points.length - 1; i++) {
-      final p1 = Offset(points[i].dx * cellSize, points[i].dy * cellSize);
-      final p2 = Offset(points[i+1].dx * cellSize, points[i+1].dy * cellSize);
-      
+      final p1 = Offset(
+        points[i].dx * cellSize + halfCell,
+        points[i].dy * cellSize + halfCell,
+      );
+      final p2 = Offset(
+        points[i + 1].dx * cellSize + halfCell,
+        points[i + 1].dy * cellSize + halfCell,
+      );
+
       final direction = (p2 - p1);
       final angle = direction.direction;
       final center = p1 + direction * 0.5;
-      
+
       canvas.save();
       canvas.translate(center.dx, center.dy);
       canvas.rotate(angle);
-      
+
       final arrowPath = Path()
         ..moveTo(5, 0)
         ..lineTo(-5, -5)

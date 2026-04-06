@@ -62,10 +62,7 @@ class ObstaclePainter extends CustomPainter {
   final Set<int> obstacles;
   final double cellSize;
 
-  ObstaclePainter({
-    required this.obstacles,
-    required this.cellSize,
-  });
+  ObstaclePainter({required this.obstacles, required this.cellSize});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -88,7 +85,7 @@ class ObstaclePainter extends CustomPainter {
       );
 
       canvas.drawRect(rect, paint);
-      
+
       if (cellSize > 4) {
         canvas.drawLine(rect.topLeft, rect.bottomRight, linePaint);
         canvas.drawLine(rect.topRight, rect.bottomLeft, linePaint);

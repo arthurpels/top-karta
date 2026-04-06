@@ -10,7 +10,7 @@ class PathNode {
   final int row;
   final int col;
   final int gCost;
-  final int hCost; 
+  final int hCost;
   final PathNode? parent;
 
   PathNode({
@@ -18,32 +18,28 @@ class PathNode {
     required this.col,
     required this.gCost,
     required this.hCost,
-    this.parent
+    this.parent,
   });
 
   int get fCost => gCost + hCost;
 
   @override
   bool operator ==(Object other) =>
-    identical(this, other) || other is PathNode && other.row == row && other.col == col;
+      identical(this, other) ||
+      other is PathNode && other.row == row && other.col == col;
 
   @override
   int get hashCode => cellHash(row, col);
 }
 
-typedef AStarStepCallback = void Function(
-  Set<int> openSet,
-  Set<int> closedSet,
-  (int, int)? current,
-);
+typedef AStarStepCallback =
+    void Function(Set<int> openSet, Set<int> closedSet, (int, int)? current);
 
 class AStarPathFinder {
   final CampusMap config;
   int lastIterations = 0;
 
-  AStarPathFinder({
-    required this.config,
-  });
+  AStarPathFinder({required this.config});
 
   Future<List<(int, int)>?> findPath(
     int stRow,
@@ -54,12 +50,15 @@ class AStarPathFinder {
     AStarStepCallback? onStep,
     Duration delay = const Duration(milliseconds: 5),
   }) async {
-    if (!config.isInBounds(stRow, stCol) || !config.isInBounds(endRow, endCol)) {
+    if (!config.isInBounds(stRow, stCol) ||
+        !config.isInBounds(endRow, endCol)) {
       debugPrint('Старт или финиш вне карты');
       return null;
     }
 
-    final openQueue = PriorityQueue<PathNode>((a, b) => a.fCost.compareTo(b.fCost));
+    final openQueue = PriorityQueue<PathNode>(
+      (a, b) => a.fCost.compareTo(b.fCost),
+    );
     final openSetHashes = <int>{};
     final closedSet = <int>{};
 
@@ -80,7 +79,10 @@ class AStarPathFinder {
       openSetHashes.remove(current.hashCode);
 
       if (onStep != null) {
-        onStep(Set.from(openSetHashes), Set.from(closedSet), (current.row, current.col));
+        onStep(Set.from(openSetHashes), Set.from(closedSet), (
+          current.row,
+          current.col,
+        ));
         await Future.delayed(delay);
       }
 
@@ -98,13 +100,20 @@ class AStarPathFinder {
         final neighborHash = getHashOf(neighborRow, neighborCol);
 
         if (closedSet.contains(neighborHash)) continue;
-        
-        bool isBlocked = (customObstacles != null && customObstacles.contains(neighborHash)) ||
-                         config.getCell(neighborRow, neighborCol).weight >= 1000;
-        
+
+        bool isBlocked =
+            (customObstacles != null &&
+                customObstacles.contains(neighborHash)) ||
+            config.getCell(neighborRow, neighborCol).weight >= 1000;
+
         if (isBlocked) continue;
 
-        final weight = _getWeightOfTransition(current.row, current.col, neighborRow, neighborCol);
+        final weight = _getWeightOfTransition(
+          current.row,
+          current.col,
+          neighborRow,
+          neighborCol,
+        );
         final tentativeGCost = current.gCost + weight;
 
         final neighborNode = PathNode(
@@ -141,15 +150,15 @@ class AStarPathFinder {
   }
 
   List<(int, int)> _getNeighbors(PathNode node) => [
-        (node.row - 1, node.col),
-        (node.row + 1, node.col),
-        (node.row, node.col - 1),
-        (node.row, node.col + 1),
-        (node.row - 1, node.col - 1),
-        (node.row - 1, node.col + 1),
-        (node.row + 1, node.col - 1),
-        (node.row + 1, node.col + 1),
-      ];
+    (node.row - 1, node.col),
+    (node.row + 1, node.col),
+    (node.row, node.col - 1),
+    (node.row, node.col + 1),
+    (node.row - 1, node.col - 1),
+    (node.row - 1, node.col + 1),
+    (node.row + 1, node.col - 1),
+    (node.row + 1, node.col + 1),
+  ];
 
   int _getWeightOfTransition(int fromRow, int fromCol, int toRow, int toCol) {
     final isDiagonal = (toRow - fromRow).abs() + (toCol - fromCol).abs() > 1;
@@ -160,7 +169,7 @@ class AStarPathFinder {
     return 10 + (weight * 10);
   }
 
-int getHashOf(int row, int col) {
-  return row * 1000 + col;
+  int getHashOf(int row, int col) {
+    return row * 1000 + col;
+  }
 }
-}

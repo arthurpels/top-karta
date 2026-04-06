@@ -32,14 +32,17 @@ class KMeans {
     return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
   }
 
-  void _assignClusters(List<ClusterPoint> points, List<ClusterPoint> centroids){
-    for(final point in points){
+  void _assignClusters(
+    List<ClusterPoint> points,
+    List<ClusterPoint> centroids,
+  ) {
+    for (final point in points) {
       double minDist = double.infinity;
       int closestIndex = 0;
 
-      for (int i = 0; i < centroids.length; i++){
+      for (int i = 0; i < centroids.length; i++) {
         final dist = _distance(point, centroids[i]);
-        if (dist < minDist){
+        if (dist < minDist) {
           minDist = dist;
           closestIndex = i;
         }
@@ -55,7 +58,12 @@ class KMeans {
       final clusterPoints = points.where((p) => p.clusterIndex == i).toList();
 
       if (clusterPoints.isEmpty) {
-        centroids.add(ClusterPoint(x: points[i % points.length].x, y: points[i % points.length].y));
+        centroids.add(
+          ClusterPoint(
+            x: points[i % points.length].x,
+            y: points[i % points.length].y,
+          ),
+        );
       } else {
         double sumX = 0;
         double sumY = 0;
@@ -63,17 +71,21 @@ class KMeans {
           sumX += p.x;
           sumY += p.y;
         }
-        centroids.add(ClusterPoint(
-          x: sumX / clusterPoints.length,
-          y: sumY / clusterPoints.length,
-        ));
+        centroids.add(
+          ClusterPoint(
+            x: sumX / clusterPoints.length,
+            y: sumY / clusterPoints.length,
+          ),
+        );
       }
     }
     return centroids;
   }
 
-  void _reorderClustersByX(List<ClusterPoint> points, List<ClusterPoint> centroids) {
-
+  void _reorderClustersByX(
+    List<ClusterPoint> points,
+    List<ClusterPoint> centroids,
+  ) {
     final indexed = List.generate(centroids.length, (i) => i);
     indexed.sort((a, b) => centroids[a].x.compareTo(centroids[b].x));
 
@@ -93,5 +105,4 @@ class KMeans {
     }
     return true;
   }
-
 }

@@ -41,7 +41,12 @@ class _MapScreenState extends State<MapScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Ошибка загрузки:\n${snapshot.error}', textAlign: TextAlign.center));
+            return Center(
+              child: Text(
+                'Ошибка загрузки:\n${snapshot.error}',
+                textAlign: TextAlign.center,
+              ),
+            );
           } else if (snapshot.hasData) {
             return Center(child: GridMapWidget(map: snapshot.data!));
           } else {

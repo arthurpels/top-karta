@@ -59,10 +59,7 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.restaurant),
             label: 'Зоны еды',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Навигация',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Навигация'),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_basket),
             label: 'Маршрут',
@@ -77,4 +74,4 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-}
+}

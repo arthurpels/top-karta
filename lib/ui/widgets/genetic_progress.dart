@@ -20,7 +20,11 @@ class GeneticProgressWidget extends StatelessWidget {
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -54,7 +58,11 @@ class GeneticProgressWidget extends StatelessWidget {
               const Text("Лучшая дистанция: ", style: TextStyle(fontSize: 13)),
               Text(
                 bestDistance.toStringAsFixed(1),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.orange,
+                ),
               ),
             ],
           ),

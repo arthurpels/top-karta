@@ -26,9 +26,9 @@ class GridMapWidget extends StatelessWidget {
 
     return InteractiveViewer(
       transformationController: transformationController,
-      minScale: 0.2, 
-      maxScale: 5.0, 
-      constrained: false, 
+      minScale: 0.2,
+      maxScale: 5.0,
+      constrained: false,
       boundaryMargin: const EdgeInsets.all(500),
       child: SizedBox(
         width: width,
@@ -48,20 +48,14 @@ class GridMapWidget extends StatelessWidget {
                 size: Size(width, height),
                 painter: PixelCanvas(map: map),
               ),
-            
+
             if (customPainter != null)
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: customPainter,
-                ),
-              ),
-              
+              Positioned.fill(child: CustomPaint(painter: customPainter)),
+
             ...markers,
           ],
         ),
       ),
     );
-
   }
 }
-

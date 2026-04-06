@@ -18,7 +18,11 @@ class GeneticOptimizer {
     this.tournamentSize = 5,
   });
 
-  RouteChromosome optimize(List<Place> places, int generations, {void Function(int generation, RouteChromosome best)? onProgress}) {
+  RouteChromosome optimize(
+    List<Place> places,
+    int generations, {
+    void Function(int generation, RouteChromosome best)? onProgress,
+  }) {
     if (places.length < 2) return RouteChromosome(places);
 
     _population = _initPopulation(places);
@@ -26,14 +30,15 @@ class GeneticOptimizer {
     for (int i = 0; i < generations; i++) {
       _population = _evolve();
       if (onProgress != null) {
-        final currentBest = _population.reduce((a, b) => a.fitness < b.fitness ? a : b);
+        final currentBest = _population.reduce(
+          (a, b) => a.fitness < b.fitness ? a : b,
+        );
         onProgress(i + 1, currentBest);
       }
     }
 
     return _population.reduce((a, b) => a.fitness < b.fitness ? a : b);
   }
-
 
   List<RouteChromosome> _initPopulation(List<Place> places) {
     return List.generate(populationSize, (_) {
@@ -86,7 +91,7 @@ class GeneticOptimizer {
     final end = _random.nextInt(len - start) + start;
 
     final childSeq = List<Place?>.filled(len, null);
-    
+
     for (int i = start; i <= end; i++) {
       childSeq[i] = s1[i];
     }

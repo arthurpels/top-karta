@@ -48,12 +48,9 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
 
       final kmeans = KMeans(k: 3, maxIterations: 50);
       final points = places.map((p) {
-        return ClusterPoint(
-          x: p.gridCol.toDouble(),
-          y: p.gridRow.toDouble(),
-        );
+        return ClusterPoint(x: p.gridCol.toDouble(), y: p.gridRow.toDouble());
       }).toList();
-      
+
       final clusteredPoints = kmeans.run(points);
 
       setState(() {
@@ -77,7 +74,7 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
 
   List<Widget> _buildMarkers() {
     if (_map == null) return [];
-    
+
     final w = _map!.cellSize.toDouble();
     final List<Widget> markers = [];
 
@@ -99,7 +96,10 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(4),
@@ -107,7 +107,10 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
                   ),
                   child: Text(
                     place.name,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Icon(
@@ -115,7 +118,11 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
                   color: color,
                   size: 32,
                   shadows: const [
-                    Shadow(color: Colors.black45, blurRadius: 2, offset: Offset(1, 1))
+                    Shadow(
+                      color: Colors.black45,
+                      blurRadius: 2,
+                      offset: Offset(1, 1),
+                    ),
                   ],
                 ),
               ],
@@ -142,7 +149,12 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.restaurant, color: clusterIndex >= 0 ? _clusterColors[clusterIndex % _clusterColors.length] : Colors.black),
+                  Icon(
+                    Icons.restaurant,
+                    color: clusterIndex >= 0
+                        ? _clusterColors[clusterIndex % _clusterColors.length]
+                        : Colors.black,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -157,14 +169,19 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
               Text("Время работы: \${place.openTime} - \${place.closeTime}"),
               Text("Цены: \${place.priceLevel}"),
               const SizedBox(height: 12),
-              const Text("Меню:", style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                "Меню:",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Wrap(
                 spacing: 8,
                 children: place.menu
-                    .map((item) => Chip(
-                          label: Text(item, style: const TextStyle(fontSize: 12)),
-                          padding: EdgeInsets.zero,
-                        ))
+                    .map(
+                      (item) => Chip(
+                        label: Text(item, style: const TextStyle(fontSize: 12)),
+                        padding: EdgeInsets.zero,
+                      ),
+                    )
                     .toList(),
               ),
               const SizedBox(height: 24),
@@ -186,10 +203,7 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Зоны еды (K-Means)'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Зоны еды (K-Means)'), elevation: 0),
       body: Stack(
         children: [
           GridMapWidget(
@@ -197,7 +211,7 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
             transformationController: _transformationController,
             markers: _buildMarkers(),
           ),
-          
+
           Positioned(
             left: 16,
             bottom: 16,
@@ -209,7 +223,10 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Зоны питания:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Зоны питания:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
                     _buildLegendItem('Зона 1 (Запад)', 0),
                     _buildLegendItem('Зона 2 (Центр)', 1),
@@ -218,7 +235,7 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(

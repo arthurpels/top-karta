@@ -18,7 +18,7 @@ class Place {
     required this.openTime,
     required this.closeTime,
     required this.priceLevel,
-    required this.menu
+    required this.menu,
   });
 
   Place.fromJson(Map<String, dynamic> json)

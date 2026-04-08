@@ -1,12 +1,16 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../algorithms/astar.dart';
 import '../../data/models/CampusMap.dart';
 import '../../data/models/Place.dart';
 import '../../core/clustering/kmeans.dart';
 import '../../core/clustering/point.dart';
 import '../widgets/grid_map_widget.dart';
+
+enum DistanceMode { euclidean, walking }
 
 class FoodZonesScreen extends StatefulWidget {
   const FoodZonesScreen({super.key});
@@ -18,7 +22,10 @@ class FoodZonesScreen extends StatefulWidget {
 class _FoodZonesScreenState extends State<FoodZonesScreen> {
   CampusMap? _map;
   List<Place> _places = [];
-  List<ClusterPoint> _points = [];
+  List<ClusterPoint> _euclideanPoints = [];
+  List<ClusterPoint> _walkingPoints = [];
+  Set<int> _changedClusterIndexes = {};
+  DistanceMode _distanceMode = DistanceMode.euclidean;
   bool _isLoading = true;
 
   final TransformationController _transformationController =
@@ -47,16 +54,43 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
       final places = placesJson.map((p) => Place.fromJson(p)).toList();
 
       final kmeans = KMeans(k: 3, maxIterations: 50);
-      final points = places.map((p) {
-        return ClusterPoint(x: p.gridCol.toDouble(), y: p.gridRow.toDouble());
+      final basePoints = places.asMap().entries.map((entry) {
+        final p = entry.value;
+        return ClusterPoint(
+          x: p.gridCol.toDouble(),
+          y: p.gridRow.toDouble(),
+          sourceIndex: entry.key,
+        );
       }).toList();
-
-      final clusteredPoints = kmeans.run(points);
+      final euclideanPoints = kmeans.run(
+        basePoints
+            .map(
+              (p) => ClusterPoint(x: p.x, y: p.y, sourceIndex: p.sourceIndex),
+            )
+            .toList(),
+      );
+      final walkingMatrix = await _buildWalkingDistanceMatrix(mapData, places);
+      final walkingPoints = kmeans.run(
+        basePoints
+            .map(
+              (p) => ClusterPoint(x: p.x, y: p.y, sourceIndex: p.sourceIndex),
+            )
+            .toList(),
+        distanceMatrix: walkingMatrix,
+      );
+      final changedIndexes = <int>{};
+      for (int i = 0; i < places.length; i++) {
+        if (euclideanPoints[i].clusterIndex != walkingPoints[i].clusterIndex) {
+          changedIndexes.add(i);
+        }
+      }
 
       setState(() {
         _map = mapData;
         _places = places;
-        _points = clusteredPoints;
+        _euclideanPoints = euclideanPoints;
+        _walkingPoints = walkingPoints;
+        _changedClusterIndexes = changedIndexes;
         _isLoading = false;
 
         if (_map != null) {
@@ -72,6 +106,67 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
     }
   }
 
+  Future<List<List<double>>> _buildWalkingDistanceMatrix(
+    CampusMap map,
+    List<Place> places,
+  ) async {
+    final finder = AStarPathFinder(config: map);
+    final n = places.length;
+    final matrix = List.generate(n, (_) => List<double>.filled(n, 0));
+    final snapped = places
+        .map((p) => _snapToWalkable(map, p.gridRow, p.gridCol))
+        .toList(growable: false);
+    for (int i = 0; i < n; i++) {
+      for (int j = i + 1; j < n; j++) {
+        final start = snapped[i];
+        final end = snapped[j];
+        final path = await finder.findPath(start.$1, start.$2, end.$1, end.$2);
+        final distance = path == null
+            ? _euclideanGridDistance(start, end) * 2.0
+            : path.length.toDouble();
+        matrix[i][j] = distance;
+        matrix[j][i] = distance;
+      }
+    }
+    return matrix;
+  }
+
+  (int, int) _snapToWalkable(CampusMap map, int row, int col) {
+    if (map.isInBounds(row, col) && map.getCell(row, col).weight < 1000) {
+      return (row, col);
+    }
+    final maxRadius = map.rows > map.cols ? map.rows : map.cols;
+    for (int radius = 1; radius <= maxRadius; radius++) {
+      for (int dr = -radius; dr <= radius; dr++) {
+        for (int dc = -radius; dc <= radius; dc++) {
+          if (dr.abs() != radius && dc.abs() != radius) {
+            continue;
+          }
+          final nr = row + dr;
+          final nc = col + dc;
+          if (!map.isInBounds(nr, nc)) {
+            continue;
+          }
+          if (map.getCell(nr, nc).weight < 1000) {
+            return (nr, nc);
+          }
+        }
+      }
+    }
+    return (row, col);
+  }
+
+  double _euclideanGridDistance((int, int) a, (int, int) b) {
+    final dx = (a.$2 - b.$2).toDouble();
+    final dy = (a.$1 - b.$1).toDouble();
+    return sqrt(dx * dx + dy * dy);
+  }
+
+  List<ClusterPoint> get _displayPoints =>
+      _distanceMode == DistanceMode.euclidean
+      ? _euclideanPoints
+      : _walkingPoints;
+
   List<Widget> _buildMarkers() {
     if (_map == null) return [];
 
@@ -80,7 +175,8 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
 
     for (int i = 0; i < _places.length; i++) {
       final place = _places[i];
-      final cluster = _points[i].clusterIndex;
+      final cluster = _displayPoints[i].clusterIndex;
+      final isChanged = _changedClusterIndexes.contains(i);
       final color = cluster >= 0 && cluster < _clusterColors.length
           ? _clusterColors[cluster]
           : Colors.black;
@@ -103,10 +199,13 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: color, width: 1),
+                    border: Border.all(
+                      color: isChanged ? Colors.black : color,
+                      width: isChanged ? 2 : 1,
+                    ),
                   ),
                   child: Text(
-                    place.name,
+                    isChanged ? '${place.name} *' : place.name,
                     style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -135,6 +234,7 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
   }
 
   void _showPlaceInfo(Place place, int clusterIndex) {
+    final placeIdx = _places.indexOf(place);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -168,6 +268,13 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
               Text("Тип: \${place.type}"),
               Text("Время работы: \${place.openTime} - \${place.closeTime}"),
               Text("Цены: \${place.priceLevel}"),
+              const SizedBox(height: 8),
+              Text(
+                "Кластер (по прямой): ${_euclideanPoints[placeIdx].clusterIndex + 1}",
+              ),
+              Text(
+                "Кластер (по тропам): ${_walkingPoints[placeIdx].clusterIndex + 1}",
+              ),
               const SizedBox(height: 12),
               const Text(
                 "Меню:",
@@ -203,7 +310,37 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Зоны еды (K-Means)'), elevation: 0),
+      appBar: AppBar(
+        title: Text(
+          _distanceMode == DistanceMode.euclidean
+              ? 'Зоны еды (Euclidean)'
+              : 'Зоны еды (Walking A*)',
+        ),
+        elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: SegmentedButton<DistanceMode>(
+              segments: const [
+                ButtonSegment(
+                  value: DistanceMode.euclidean,
+                  label: Text('По прямой'),
+                ),
+                ButtonSegment(
+                  value: DistanceMode.walking,
+                  label: Text('По тропам'),
+                ),
+              ],
+              selected: {_distanceMode},
+              onSelectionChanged: (selected) {
+                setState(() {
+                  _distanceMode = selected.first;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
       body: Stack(
         children: [
           GridMapWidget(
@@ -231,6 +368,11 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
                     _buildLegendItem('Зона 1 (Запад)', 0),
                     _buildLegendItem('Зона 2 (Центр)', 1),
                     _buildLegendItem('Зона 3 (Восток)', 2),
+                    const SizedBox(height: 6),
+                    Text(
+                      "Меняют кластер: ${_changedClusterIndexes.length}",
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   ],
                 ),
               ),

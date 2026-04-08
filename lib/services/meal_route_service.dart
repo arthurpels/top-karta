@@ -19,6 +19,8 @@ class MealRouteProgress {
 }
 
 class MealRouteService {
+  static const double _metersPerCell = 3.0;
+  static const double _walkingSpeedMetersPerMinute = 5000 / 60;
   final List<Place> allPlaces;
   final CampusMap map;
 
@@ -30,6 +32,16 @@ class MealRouteService {
       set.addAll(place.menu);
     }
     return set.toList()..sort();
+  }
+
+  Set<String> getUnavailableDishesNow(Iterable<String> dishes) {
+    final now = DateTime.now();
+    final nowMinutes = now.hour * 60 + now.minute;
+    return _findUnavailableDishesToday(
+      dishes.toSet(),
+      allPlaces,
+      nowMinutes,
+    ).toSet();
   }
 
   Stream<MealRouteProgress> optimizeRouteInIsolate(
@@ -47,6 +59,18 @@ class MealRouteService {
         .toList(growable: false);
     if (candidates.isEmpty) {
       return;
+    }
+    final now = DateTime.now();
+    final startMinutesOfDay = now.hour * 60 + now.minute;
+    final unavailableDishes = _findUnavailableDishesToday(
+      selectedSet,
+      candidates,
+      startMinutesOfDay,
+    );
+    if (unavailableDishes.isNotEmpty) {
+      throw Exception(
+        'Сегодня недоступны блюда: ${unavailableDishes.join(', ')}',
+      );
     }
 
     final requiredPlaces = _pickRequiredPlaces(selectedSet, candidates);
@@ -97,6 +121,9 @@ class MealRouteService {
         'cols': map.cols,
         'generations': generations,
         'populationSize': populationSize,
+        'startMinutesOfDay': startMinutesOfDay,
+        'metersPerCell': _metersPerCell,
+        'walkingSpeedMetersPerMinute': _walkingSpeedMetersPerMinute,
       },
     );
 
@@ -169,6 +196,37 @@ class MealRouteService {
     return chosen;
   }
 
+  List<String> _findUnavailableDishesToday(
+    Set<String> selectedDishes,
+    List<Place> candidates,
+    int nowMinutes,
+  ) {
+    final unavailable = <String>[];
+    for (final dish in selectedDishes) {
+      final canServeToday = candidates.any((place) {
+        if (!place.menu.contains(dish)) {
+          return false;
+        }
+        final open = _parseTimeToMinutes(place.openTime);
+        final close = _parseTimeToMinutes(place.closeTime);
+        final remainingNow = _minutesUntilClose(
+          nowMinutes.toDouble(),
+          open,
+          close,
+        );
+        if (remainingNow >= 0) {
+          return true;
+        }
+        final wait = _waitUntilOpen(nowMinutes.toDouble(), open, close);
+        return wait >= 0;
+      });
+      if (!canServeToday) {
+        unavailable.add(dish);
+      }
+    }
+    return unavailable;
+  }
+
   (int, int) _snapToWalkable(int row, int col) {
     if (map.isInBounds(row, col) && map.getCell(row, col).weight < 1000) {
       return (row, col);
@@ -214,6 +272,10 @@ void _mealRouteIsolateEntry(Map<String, dynamic> message) {
     final cols = message['cols'] as int;
     final generations = message['generations'] as int;
     final populationSize = message['populationSize'] as int;
+    final startMinutesOfDay = message['startMinutesOfDay'] as int;
+    final metersPerCell = (message['metersPerCell'] as num).toDouble();
+    final walkingSpeedMetersPerMinute =
+        (message['walkingSpeedMetersPerMinute'] as num).toDouble();
 
     final placesData = (message['places'] as List).cast<Map>();
     final places = placesData
@@ -221,6 +283,8 @@ void _mealRouteIsolateEntry(Map<String, dynamic> message) {
           (p) => _IsolatePlace(
             row: p['grid_row'] as int,
             col: p['grid_col'] as int,
+            openMinutes: _parseTimeToMinutes(p['open_time'] as String),
+            closeMinutes: _parseTimeToMinutes(p['close_time'] as String),
           ),
         )
         .toList(growable: false);
@@ -229,9 +293,18 @@ void _mealRouteIsolateEntry(Map<String, dynamic> message) {
         .map((row) => (row as List).cast<int>())
         .toList(growable: false);
 
-    final matrix = _buildDistanceMatrix(places, grid, rows, cols);
+    final matrix = _buildTravelMinutesMatrix(
+      places,
+      grid,
+      rows,
+      cols,
+      metersPerCell: metersPerCell,
+      walkingSpeedMetersPerMinute: walkingSpeedMetersPerMinute,
+    );
     final best = _runGenetic(
       matrix: matrix,
+      places: places,
+      startMinutesOfDay: startMinutesOfDay,
       generations: generations,
       populationSize: populationSize,
       onProgress: (generation, state) {
@@ -261,8 +334,15 @@ void _mealRouteIsolateEntry(Map<String, dynamic> message) {
 class _IsolatePlace {
   final int row;
   final int col;
+  final int openMinutes;
+  final int closeMinutes;
 
-  const _IsolatePlace({required this.row, required this.col});
+  const _IsolatePlace({
+    required this.row,
+    required this.col,
+    required this.openMinutes,
+    required this.closeMinutes,
+  });
 }
 
 class _GaState {
@@ -272,12 +352,62 @@ class _GaState {
   const _GaState(this.order, this.distance);
 }
 
-List<List<double>> _buildDistanceMatrix(
+int _parseTimeToMinutes(String value) {
+  final parts = value.split(':');
+  if (parts.length != 2) {
+    return 0;
+  }
+  final h = int.tryParse(parts[0]) ?? 0;
+  final m = int.tryParse(parts[1]) ?? 0;
+  return h * 60 + m;
+}
+
+double _minutesUntilClose(double nowMinute, int openMinutes, int closeMinutes) {
+  final minute = (nowMinute % 1440 + 1440) % 1440;
+  if (openMinutes == closeMinutes) {
+    return 0;
+  }
+  if (openMinutes < closeMinutes) {
+    if (minute < openMinutes || minute >= closeMinutes) {
+      return -1;
+    }
+    return closeMinutes - minute;
+  }
+  if (minute >= openMinutes || minute < closeMinutes) {
+    if (minute >= openMinutes) {
+      return (1440 - minute) + closeMinutes;
+    }
+    return closeMinutes - minute;
+  }
+  return -1;
+}
+
+double _waitUntilOpen(double nowMinute, int openMinutes, int closeMinutes) {
+  final remaining = _minutesUntilClose(nowMinute, openMinutes, closeMinutes);
+  if (remaining >= 0) {
+    return 0;
+  }
+  final minute = (nowMinute % 1440 + 1440) % 1440;
+  if (openMinutes < closeMinutes) {
+    if (minute < openMinutes) {
+      return openMinutes - minute;
+    }
+    return -1;
+  }
+  if (minute < openMinutes && minute >= closeMinutes) {
+    return openMinutes - minute;
+  }
+  return -1;
+}
+
+List<List<double>> _buildTravelMinutesMatrix(
   List<_IsolatePlace> places,
   List<List<int>> grid,
   int rows,
-  int cols,
-) {
+  int cols, {
+  required double metersPerCell,
+  required double walkingSpeedMetersPerMinute,
+}) {
   final n = places.length;
   final matrix = List.generate(
     n,
@@ -296,9 +426,16 @@ List<List<double>> _buildDistanceMatrix(
         rows,
         cols,
       );
-      final distance = route == null ? 1e12 : route.cost.toDouble();
-      matrix[i][j] = distance;
-      matrix[j][i] = distance;
+      if (route == null || route.path.length < 2) {
+        matrix[i][j] = 1e12;
+        matrix[j][i] = 1e12;
+        continue;
+      }
+      final steps = route.path.length - 1;
+      final distanceMeters = steps * metersPerCell;
+      final travelMinutes = distanceMeters / walkingSpeedMetersPerMinute;
+      matrix[i][j] = travelMinutes;
+      matrix[j][i] = travelMinutes;
     }
   }
   return matrix;
@@ -306,6 +443,8 @@ List<List<double>> _buildDistanceMatrix(
 
 _GaState _runGenetic({
   required List<List<double>> matrix,
+  required List<_IsolatePlace> places,
+  required int startMinutesOfDay,
   required int generations,
   required int populationSize,
   required void Function(int generation, _GaState best) onProgress,
@@ -321,11 +460,62 @@ _GaState _runGenetic({
   });
 
   double fitness(List<int> order) {
-    double sum = 0;
-    for (int i = 0; i < order.length - 1; i++) {
-      sum += matrix[order[i]][order[i + 1]];
+    const serviceMinutes = 5.0;
+    const closingGraceMinutes = 30.0;
+    const closedPenalty = 480.0;
+    const lowSlackPenaltyFactor = 8.0;
+    const urgencyOrderPenaltyFactor = 40.0;
+
+    var total = 0.0;
+    var currentMinute = startMinutesOfDay.toDouble();
+
+    for (int i = 0; i < order.length; i++) {
+      final placeIndex = order[i];
+      final place = places[placeIndex];
+
+      if (i > 0) {
+        final travel = matrix[order[i - 1]][placeIndex];
+        total += travel;
+        currentMinute += travel;
+      }
+
+      final waitMinutes = _waitUntilOpen(
+        currentMinute,
+        place.openMinutes,
+        place.closeMinutes,
+      );
+      if (waitMinutes < 0) {
+        total += closedPenalty;
+        continue;
+      }
+      total += waitMinutes;
+      currentMinute += waitMinutes;
+
+      final remainingAtArrival = _minutesUntilClose(
+        currentMinute,
+        place.openMinutes,
+        place.closeMinutes,
+      );
+      if (remainingAtArrival <= 0) {
+        total += closedPenalty;
+      } else if (remainingAtArrival < closingGraceMinutes) {
+        total +=
+            (closingGraceMinutes - remainingAtArrival) * lowSlackPenaltyFactor;
+      }
+
+      final remainingAtStart = _minutesUntilClose(
+        startMinutesOfDay.toDouble(),
+        place.openMinutes,
+        place.closeMinutes,
+      );
+      final urgencyWeight = 1 / (remainingAtStart + 30);
+      total += i * urgencyWeight * urgencyOrderPenaltyFactor;
+
+      total += serviceMinutes;
+      currentMinute += serviceMinutes;
     }
-    return sum;
+
+    return total;
   }
 
   _GaState getBest(List<List<int>> p) {

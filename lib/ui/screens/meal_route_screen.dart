@@ -19,6 +19,7 @@ class MealRouteScreen extends StatefulWidget {
 class _MealRouteScreenState extends State<MealRouteScreen> {
   CampusMap? _map;
   List<String> _allDishes = [];
+  Set<String> _unavailableDishesNow = {};
   final Set<String> _selectedDishes = {};
   RouteChromosome? _bestRoute;
   MealRouteService? _routeService;
@@ -26,7 +27,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
   bool _isOptimizing = false;
 
   int _currentGeneration = 0;
-  double _currentBestDistance = 0;
+  double _currentBestScore = 0;
 
   final TransformationController _transformationController =
       TransformationController();
@@ -48,6 +49,9 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
         _map = mapData;
         _routeService = MealRouteService(places, mapData);
         _allDishes = _routeService!.getAllUniqueDishes();
+        _unavailableDishesNow = _routeService!.getUnavailableDishesNow(
+          _allDishes,
+        );
         _isLoading = false;
 
         if (_map != null) {
@@ -69,7 +73,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
     setState(() {
       _isOptimizing = true;
       _currentGeneration = 0;
-      _currentBestDistance = 0;
+      _currentBestScore = 0;
       _bestRoute = null;
     });
 
@@ -82,7 +86,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
         }
         setState(() {
           _currentGeneration = progress.generation;
-          _currentBestDistance = progress.best.fitness;
+          _currentBestScore = progress.best.fitness;
           _bestRoute = progress.best;
           _isOptimizing = !progress.isDone;
         });
@@ -191,7 +195,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
               child: GeneticProgressWidget(
                 generation: _currentGeneration,
                 maxGenerations: 100,
-                bestDistance: _currentBestDistance,
+                bestScore: _currentBestScore,
               ),
             )
           else
@@ -216,7 +220,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Заведений: ${_bestRoute!.sequence.length} | Расстояние: ${_bestRoute!.fitness.toStringAsFixed(1)} ед.",
+                        "Заведений: ${_bestRoute!.sequence.length} | Оценка: ${_bestRoute!.fitness.toStringAsFixed(1)} мин",
                       ),
                     ],
                   ),
@@ -284,6 +288,13 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
               "Что хотите купить?",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            if (_unavailableDishesNow.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                "Сейчас недоступно: ${_unavailableDishesNow.join(', ')}",
+                style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+              ),
+            ],
             const SizedBox(height: 12),
             Expanded(
               child: SingleChildScrollView(
@@ -292,18 +303,28 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                   runSpacing: 4,
                   children: _allDishes.map((dish) {
                     final isSelected = _selectedDishes.contains(dish);
+                    final isUnavailable = _unavailableDishesNow.contains(dish);
                     return FilterChip(
                       label: Text(dish),
                       selected: isSelected,
-                      onSelected: (val) {
-                        setState(() {
-                          if (val) {
-                            _selectedDishes.add(dish);
-                          } else {
-                            _selectedDishes.remove(dish);
-                          }
-                        });
-                      },
+                      onSelected: isUnavailable
+                          ? null
+                          : (val) {
+                              setState(() {
+                                if (val) {
+                                  _selectedDishes.add(dish);
+                                } else {
+                                  _selectedDishes.remove(dish);
+                                }
+                              });
+                            },
+                      avatar: isUnavailable
+                          ? const Icon(
+                              Icons.block,
+                              size: 16,
+                              color: Colors.redAccent,
+                            )
+                          : null,
                       selectedColor: Colors.orange.withValues(alpha: 0.3),
                       checkmarkColor: Colors.orange,
                     );

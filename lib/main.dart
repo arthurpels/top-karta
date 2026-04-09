@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'ui/screens/decision_tree_screen.dart';
 import 'ui/screens/food_zones_screen.dart';
 import 'ui/screens/navigation_screen.dart';
 import 'ui/screens/meal_route_screen.dart';
@@ -41,6 +42,7 @@ class _MainScreenState extends State<MainScreen> {
     FoodZonesScreen(),
     NavigationScreen(),
     MealRouteScreen(),
+    DecisionTreeScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -63,6 +65,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_basket),
             label: 'Маршрут',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_tree),
+            label: 'Дерево',
           ),
         ],
         currentIndex: _selectedIndex,

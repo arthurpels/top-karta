@@ -3,6 +3,7 @@ import 'ui/screens/decision_tree_screen.dart';
 import 'ui/screens/food_zones_screen.dart';
 import 'ui/screens/navigation_screen.dart';
 import 'ui/screens/meal_route_screen.dart';
+import 'ui/screens/tour_screen.dart';
 
 void main() {
   runApp(const TopKartaApp());
@@ -42,6 +43,7 @@ class _MainScreenState extends State<MainScreen> {
     FoodZonesScreen(),
     NavigationScreen(),
     MealRouteScreen(),
+    TourScreen(),
     DecisionTreeScreen(),
   ];
 
@@ -66,6 +68,7 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.shopping_basket),
             label: 'Маршрут',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.hiking), label: 'Тур'),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_tree),
             label: 'Дерево',

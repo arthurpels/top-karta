@@ -73,8 +73,33 @@ class DecisionTreeModel {
   });
 }
 
+class DecisionTreeTrainOptions {
+  final int? maxDepth;
+  final double minInformationGain;
+
+  const DecisionTreeTrainOptions({
+    this.maxDepth,
+    this.minInformationGain = 1e-9,
+  });
+}
+
+class DecisionTreeStats {
+  final int nodeCount;
+  final int leafCount;
+  final int depth;
+
+  const DecisionTreeStats({
+    required this.nodeCount,
+    required this.leafCount,
+    required this.depth,
+  });
+}
+
 class DecisionTreeClassifier {
-  DecisionTreeModel train(List<DecisionTreeSample> samples) {
+  DecisionTreeModel train(
+    List<DecisionTreeSample> samples, {
+    DecisionTreeTrainOptions options = const DecisionTreeTrainOptions(),
+  }) {
     if (samples.isEmpty) {
       throw const FormatException('Обучающая выборка пуста');
     }
@@ -94,7 +119,12 @@ class DecisionTreeClassifier {
       }
     }
 
-    final root = _buildTree(samples: samples, features: featureOrder);
+    final root = _buildTree(
+      samples: samples,
+      features: featureOrder,
+      options: options,
+      depth: 0,
+    );
 
     return DecisionTreeModel(
       root: root,
@@ -126,17 +156,24 @@ class DecisionTreeClassifier {
   DecisionTreeNode _buildTree({
     required List<DecisionTreeSample> samples,
     required List<String> features,
+    required DecisionTreeTrainOptions options,
+    required int depth,
   }) {
     final majority = _majorityLabel(samples);
     if (_allSameLabel(samples)) {
       return DecisionTreeNode.leaf(samples.first.label);
     }
+    if (options.maxDepth != null && depth >= options.maxDepth!) {
+      return DecisionTreeNode.leaf(majority);
+    }
     if (features.isEmpty) {
       return DecisionTreeNode.leaf(majority);
     }
 
-    final bestFeature = _bestFeatureByGain(samples, features);
-    if (bestFeature == null) {
+    final bestSplit = _bestFeatureByGain(samples, features);
+    final bestFeature = bestSplit.$1;
+    final bestGain = bestSplit.$2;
+    if (bestFeature == null || bestGain < options.minInformationGain) {
       return DecisionTreeNode.leaf(majority);
     }
 
@@ -152,6 +189,8 @@ class DecisionTreeClassifier {
       children[entry.key] = _buildTree(
         samples: entry.value,
         features: nextFeatures,
+        options: options,
+        depth: depth + 1,
       );
     }
 
@@ -162,7 +201,7 @@ class DecisionTreeClassifier {
     );
   }
 
-  String? _bestFeatureByGain(
+  (String?, double) _bestFeatureByGain(
     List<DecisionTreeSample> samples,
     List<String> features,
   ) {
@@ -189,7 +228,7 @@ class DecisionTreeClassifier {
       }
     }
 
-    return bestFeature;
+    return (bestFeature, bestGain);
   }
 
   double _entropy(List<DecisionTreeSample> samples) {
@@ -222,6 +261,32 @@ class DecisionTreeClassifier {
     }
     return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   }
+}
+
+DecisionTreeStats analyzeTree(DecisionTreeNode root) {
+  int nodeCount = 0;
+  int leafCount = 0;
+  int maxDepth = 0;
+
+  void visit(DecisionTreeNode node, int depth) {
+    nodeCount++;
+    if (node.isLeaf) {
+      leafCount++;
+    }
+    if (depth > maxDepth) {
+      maxDepth = depth;
+    }
+    for (final child in node.children.values) {
+      visit(child, depth + 1);
+    }
+  }
+
+  visit(root, 1);
+  return DecisionTreeStats(
+    nodeCount: nodeCount,
+    leafCount: leafCount,
+    depth: maxDepth,
+  );
 }
 
 List<DecisionTreeSample> parseDecisionTreeCsv(

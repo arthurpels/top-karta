@@ -15,10 +15,16 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
     text: _defaultCsv,
   );
 
-  DecisionTreeModel? _model;
+  List<DecisionTreeSample> _samples = [];
+  DecisionTreeModel? _fullModel;
+  DecisionTreeModel? _prunedModel;
+  bool _usePruned = false;
+  int _maxPrunedDepth = 3;
   Map<String, String> _selectedFeatures = {};
   DecisionTreePrediction? _prediction;
   String? _error;
+
+  DecisionTreeModel? get _activeModel => _usePruned ? _prunedModel : _fullModel;
 
   @override
   void dispose() {
@@ -29,15 +35,21 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
   void _trainModel() {
     try {
       final samples = parseDecisionTreeCsv(_csvController.text);
-      final model = _classifier.train(samples);
+      final fullModel = _classifier.train(samples);
+      final prunedModel = _classifier.train(
+        samples,
+        options: DecisionTreeTrainOptions(maxDepth: _maxPrunedDepth),
+      );
       final features = <String, String>{};
-      for (final f in model.featureOrder) {
-        final values = model.featureValues[f] ?? const <String>[];
+      for (final f in fullModel.featureOrder) {
+        final values = fullModel.featureValues[f] ?? const <String>[];
         features[f] = values.isNotEmpty ? values.first : '';
       }
 
       setState(() {
-        _model = model;
+        _samples = samples;
+        _fullModel = fullModel;
+        _prunedModel = prunedModel;
         _selectedFeatures = features;
         _prediction = null;
         _error = null;
@@ -51,16 +63,32 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
   }
 
   void _predict() {
-    if (_model == null) {
+    if (_activeModel == null) {
       return;
     }
     final prediction = _classifier.predict(
-      model: _model!,
+      model: _activeModel!,
       features: _selectedFeatures,
     );
     setState(() {
       _prediction = prediction;
     });
+  }
+
+  void _rebuildPrunedModel() {
+    if (_samples.isEmpty) {
+      return;
+    }
+    final prunedModel = _classifier.train(
+      _samples,
+      options: DecisionTreeTrainOptions(maxDepth: _maxPrunedDepth),
+    );
+    setState(() {
+      _prunedModel = prunedModel;
+    });
+    if (_usePruned) {
+      _predict();
+    }
   }
 
   @override
@@ -97,7 +125,7 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                           label: const Text('Обучить дерево'),
                         ),
                         const SizedBox(width: 8),
-                        if (_model != null)
+                        if (_activeModel != null)
                           OutlinedButton.icon(
                             onPressed: _predict,
                             icon: const Icon(Icons.play_arrow),
@@ -112,14 +140,62 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                 const SizedBox(height: 8),
                 Text(_error!, style: const TextStyle(color: Colors.red)),
               ],
-              if (_model != null) ...[
+              if (_activeModel != null) ...[
+                _buildSectionCard(
+                  title: 'Сжатие дерева (bonus)',
+                  icon: Icons.compress,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('Режим:'),
+                          const SizedBox(width: 8),
+                          SegmentedButton<bool>(
+                            segments: const [
+                              ButtonSegment(
+                                value: false,
+                                label: Text('Полное'),
+                              ),
+                              ButtonSegment(value: true, label: Text('Сжатое')),
+                            ],
+                            selected: {_usePruned},
+                            onSelectionChanged: (selected) {
+                              setState(() {
+                                _usePruned = selected.first;
+                              });
+                              _predict();
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Макс. глубина сжатого: $_maxPrunedDepth'),
+                      Slider(
+                        min: 1,
+                        max: 8,
+                        divisions: 7,
+                        value: _maxPrunedDepth.toDouble(),
+                        onChanged: (value) {
+                          setState(() {
+                            _maxPrunedDepth = value.round();
+                          });
+                          _rebuildPrunedModel();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildPruningStats(),
+                    ],
+                  ),
+                ),
                 _buildSectionCard(
                   title: 'Ввод признаков',
                   icon: Icons.tune,
                   child: Column(
-                    children: _model!.featureOrder.map((feature) {
+                    children: _activeModel!.featureOrder.map((feature) {
                       final values =
-                          _model!.featureValues[feature] ?? const <String>[];
+                          _activeModel!.featureValues[feature] ??
+                          const <String>[];
                       final selected = _selectedFeatures[feature] ?? '';
                       final effective =
                           values.contains(selected) && selected.isNotEmpty
@@ -233,7 +309,10 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                 _buildSectionCard(
                   title: 'Граф дерева',
                   icon: Icons.hub,
-                  child: _DecisionNodeGraph(node: _model!.root, isRoot: true),
+                  child: _DecisionNodeGraph(
+                    node: _activeModel!.root,
+                    isRoot: true,
+                  ),
                 ),
               ],
             ],
@@ -273,6 +352,42 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
             child,
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPruningStats() {
+    if (_fullModel == null || _prunedModel == null) {
+      return const SizedBox.shrink();
+    }
+    final full = analyzeTree(_fullModel!.root);
+    final pruned = analyzeTree(_prunedModel!.root);
+    final nodeReduction = full.nodeCount == 0
+        ? 0.0
+        : ((full.nodeCount - pruned.nodeCount) / full.nodeCount) * 100;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.blueGrey.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Полное: узлов ${full.nodeCount}, листьев ${full.leafCount}, глубина ${full.depth}',
+            style: const TextStyle(fontSize: 12),
+          ),
+          Text(
+            'Сжатое: узлов ${pruned.nodeCount}, листьев ${pruned.leafCount}, глубина ${pruned.depth}',
+            style: const TextStyle(fontSize: 12),
+          ),
+          Text(
+            'Сокращение узлов: ${nodeReduction.toStringAsFixed(1)}%',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }

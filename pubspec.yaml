@@ -46,6 +46,22 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/topkarta_app_icon.png
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/topkarta_app_icon_foreground.png
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/topkarta_splash_native.png
+  android_12:
+    color: "#FFFFFF"
+    image: assets/topkarta_splash_native.png
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

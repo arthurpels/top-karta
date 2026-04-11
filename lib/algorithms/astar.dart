@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import '../data/models/CampusMap.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
@@ -55,6 +57,30 @@ class AStarPathFinder {
       debugPrint('Старт или финиш вне карты');
       return null;
     }
+
+    final start = _isWalkable(stRow, stCol, customObstacles)
+        ? (stRow, stCol)
+        : _snapToNearestWalkable(stRow, stCol, customObstacles);
+    final end = _isWalkable(endRow, endCol, customObstacles)
+        ? (endRow, endCol)
+        : _snapToNearestWalkable(endRow, endCol, customObstacles);
+
+    if (start == null || end == null) {
+      debugPrint('Не удалось найти ближайшую проходимую точку');
+      return null;
+    }
+
+    if (start != (stRow, stCol)) {
+      debugPrint('Старт смещен с ($stRow, $stCol) на $start');
+    }
+    if (end != (endRow, endCol)) {
+      debugPrint('Финиш смещен с ($endRow, $endCol) на $end');
+    }
+
+    stRow = start.$1;
+    stCol = start.$2;
+    endRow = end.$1;
+    endCol = end.$2;
 
     final openQueue = PriorityQueue<PathNode>(
       (a, b) => a.fCost.compareTo(b.fCost),
@@ -172,4 +198,56 @@ class AStarPathFinder {
   int getHashOf(int row, int col) {
     return row * 1000 + col;
   }
+
+  bool _isWalkable(int row, int col, Set<int>? customObstacles) {
+    final hash = getHashOf(row, col);
+    if (customObstacles != null && customObstacles.contains(hash)) {
+      return false;
+    }
+    return config.getCell(row, col).weight < 1000;
+  }
+
+  (int, int)? _snapToNearestWalkable(
+    int row,
+    int col,
+    Set<int>? customObstacles,
+  ) {
+    final startHash = getHashOf(row, col);
+    final visited = <int>{startHash};
+    final queue = Queue<(int, int)>()..add((row, col));
+
+    while (queue.isNotEmpty) {
+      final current = queue.removeFirst();
+      final r = current.$1;
+      final c = current.$2;
+
+      if (_isWalkable(r, c, customObstacles)) {
+        return current;
+      }
+
+      for (final (nr, nc) in _getNeighborCells(r, c)) {
+        if (!config.isInBounds(nr, nc)) {
+          continue;
+        }
+        final hash = getHashOf(nr, nc);
+        if (visited.contains(hash)) {
+          continue;
+        }
+        visited.add(hash);
+        queue.add((nr, nc));
+      }
+    }
+    return null;
+  }
+
+  List<(int, int)> _getNeighborCells(int row, int col) => [
+    (row - 1, col),
+    (row + 1, col),
+    (row, col - 1),
+    (row, col + 1),
+    (row - 1, col - 1),
+    (row - 1, col + 1),
+    (row + 1, col - 1),
+    (row + 1, col + 1),
+  ];
 }

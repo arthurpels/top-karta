@@ -223,9 +223,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 child: InteractiveViewer(
                   transformationController: _transformationController,
                   minScale: 0.2,
-                  maxScale: 5.0,
+                  maxScale: 8.0,
                   constrained: false,
-                  boundaryMargin: const EdgeInsets.all(500),
+                  boundaryMargin: const EdgeInsets.all(2000),
                   child: SizedBox(
                     width: mapWidth,
                     height: mapHeight,
@@ -235,7 +235,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                           child: Image.asset(
                             'assets/map.png',
                             fit: BoxFit.fill,
-                            filterQuality: FilterQuality.medium,
+                            filterQuality: FilterQuality.high,
                           ),
                         ),
 

@@ -27,9 +27,9 @@ class GridMapWidget extends StatelessWidget {
     return InteractiveViewer(
       transformationController: transformationController,
       minScale: 0.2,
-      maxScale: 5.0,
+      maxScale: 8.0,
       constrained: false,
-      boundaryMargin: const EdgeInsets.all(500),
+      boundaryMargin: const EdgeInsets.all(2000),
       child: SizedBox(
         width: width,
         height: height,
@@ -40,7 +40,7 @@ class GridMapWidget extends StatelessWidget {
                 child: Image.asset(
                   'assets/map.png',
                   fit: BoxFit.fill,
-                  filterQuality: FilterQuality.medium,
+                  filterQuality: FilterQuality.high,
                 ),
               )
             else

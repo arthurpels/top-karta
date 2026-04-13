@@ -1,64 +1,45 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/CampusMap.dart';
+import '../../data/models/CampusMap.dart';
+import 'pixel_canvas.dart';
 
 class GridMapWidget extends StatelessWidget {
-  final CampusMap campusMap;
+  final CampusMap map;
+  final List<Widget> markers;
+  final TransformationController? transformationController;
 
-  const GridMapWidget({Key? key, required this.campusMap}) : super(key: key);
+  const GridMapWidget({
+    super.key,
+    required this.map,
+    this.markers = const [],
+    this.transformationController,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final w = map.cellSize.toDouble();
+    final width = map.cols * w;
+    final height = map.rows * w;
+
     return InteractiveViewer(
-      boundaryMargin: const EdgeInsets.all(50.0),
-      minScale: 0.1,
-      maxScale: 10.0,
-      constrained: false,
-      child: CustomPaint(
-        size: Size(
-          (campusMap.cols * campusMap.cellSize).toDouble(),
-          (campusMap.rows * campusMap.cellSize).toDouble(),
+      transformationController: transformationController,
+      minScale: 0.2, 
+      maxScale: 5.0, 
+      constrained: false, 
+      boundaryMargin: const EdgeInsets.all(500),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          children: [
+            // Подложка - Сетка (Карта)
+            CustomPaint(
+              size: Size(width, height),
+              painter: PixelCanvas(map: map),
+            ),
+            ...markers,
+          ],
         ),
-        painter: MapPainter(campusMap),
       ),
     );
   }
-}
-
-class MapPainter extends CustomPainter {
-  final CampusMap map;
-
-  MapPainter(this.map);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint();
-    final borderPaint = Paint()
-      ..color = Colors.black12
-      ..style = PaintingStyle.stroke;
-      
-    for (int r = 0; r < map.rows; r++) {
-      for (int c = 0; c < map.cols; c++) {
-        final cell = map.grid[r][c];
-        
-        if (cell.weight <= 0) {
-          paint.color = const Color(0xFF0051A0); 
-        } else {
-          paint.color = Colors.white; 
-        }
-
-        final rect = Rect.fromLTWH(
-          c * map.cellSize.toDouble(),
-          r * map.cellSize.toDouble(),
-          map.cellSize.toDouble(),
-          map.cellSize.toDouble(),
-        );
-
-        canvas.drawRect(rect, paint);
-        canvas.drawRect(rect, borderPaint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

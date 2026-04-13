@@ -1,72 +1,70 @@
 import 'package:flutter/material.dart';
-import 'ui/widgets/map_screen.dart';
+import 'ui/screens/food_zones_screen.dart';
+
 void main() {
-  runApp(MyApp());
+  runApp(const TopKartaApp());
 }
 
-class MyApp extends StatelessWidget {
+class TopKartaApp extends StatelessWidget {
+  const TopKartaApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Builder(
-        builder: (context) {
-          return Scaffold(
-            appBar: AppBar(
-              backgroundColor: const Color(0xFF0051A0),
-              title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.map, color: Colors.white),
-              SizedBox(width: 8),
-              Text('THE BEST TOP-KARTA IN THE WORLD',style: TextStyle(color: Colors.white),),
-            ],
-          ),
-          centerTitle: true,
+      title: 'Top Karta (ТГУ)',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF005AAB)),
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF005AAB),
+          foregroundColor: Colors.white,
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'web/icons/images/university_logo.png',
-                width: 150,
-                height: 150,
-                errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image),
-              ),
-              SizedBox(height: 20),
-              SizedBox(
-                width: 200,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0051A0),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => MapScreen()),
-                    );
-                  },
-                  child: const Text(
-                    'открыть карту',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+      ),
+      home: const MainScreen(),
+    );
+  }
+}
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+
+  static const List<Widget> _pages = <Widget>[
+    FoodZonesScreen(),
+    Center(child: Text('Навигация (A*) - Разработка в др. ветке')),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.restaurant),
+            label: 'Зоны еды',
           ),
-        ),
-      );
-     },
-    ),
-   );
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: 'Навигация',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: const Color(0xFF005AAB),
+        onTap: _onItemTapped,
+      ),
+    );
   }
 }

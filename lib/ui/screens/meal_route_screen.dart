@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/constants/app_strings.dart';
 import '../../data/models/CampusMap.dart';
 import '../../data/models/Place.dart';
 import '../../services/meal_route_service.dart';
@@ -41,7 +42,9 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
   Future<void> _loadData() async {
     try {
       final mapData = await CampusMap.load();
-      final placesString = await rootBundle.loadString('assets/places.json');
+      final placesString = await rootBundle.loadString(
+        AppStrings.placesAssetPath,
+      );
       final List<dynamic> placesJson = jsonDecode(placesString);
       final places = placesJson.map((p) => Place.fromJson(p)).toList();
 
@@ -98,9 +101,9 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
       setState(() {
         _isOptimizing = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Ошибка расчёта маршрута: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.mealCalculationError(e))),
+      );
     }
   }
 
@@ -151,7 +154,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Маршрут еды (GA)'),
+        title: const Text(AppStrings.mealAppBarTitle),
         actions: [
           if (_bestRoute != null && !_isOptimizing)
             IconButton(
@@ -183,7 +186,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                         )
                       : null,
                 )
-              : const Center(child: Text("Ошибка загрузки карты")),
+              : const Center(child: Text(AppStrings.errorLoadMap)),
 
           if (_bestRoute == null && !_isOptimizing)
             _buildDishSelector()
@@ -211,7 +214,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "Оптимальный маршрут найден!",
+                        AppStrings.mealFoundOptimalRoute,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
                               color: Colors.orange[800],
@@ -220,7 +223,10 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Заведений: ${_bestRoute!.sequence.length} | Оценка: ${_bestRoute!.fitness.toStringAsFixed(1)} мин",
+                        AppStrings.mealSummary(
+                          _bestRoute!.sequence.length,
+                          _bestRoute!.fitness,
+                        ),
                       ),
                     ],
                   ),
@@ -245,7 +251,11 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
             onPressed: (_selectedDishes.isEmpty || _isOptimizing)
                 ? null
                 : _onOptimize,
-            label: Text(_isOptimizing ? 'Считаем...' : 'Найти еду'),
+            label: Text(
+              _isOptimizing
+                  ? AppStrings.mealCalculating
+                  : AppStrings.mealFindFood,
+            ),
             icon: _isOptimizing
                 ? const SizedBox(
                     width: 18,
@@ -285,13 +295,13 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Что хотите купить?",
+              AppStrings.mealWhatToBuy,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             if (_unavailableDishesNow.isNotEmpty) ...[
               const SizedBox(height: 6),
               Text(
-                "Сейчас недоступно: ${_unavailableDishesNow.join(', ')}",
+                AppStrings.mealUnavailableNow(_unavailableDishesNow.join(', ')),
                 style: const TextStyle(fontSize: 12, color: Colors.redAccent),
               ),
             ],
@@ -351,7 +361,7 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                "Машрут покупки",
+                AppStrings.mealRouteSheetTitle,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const Divider(),
@@ -371,7 +381,11 @@ class _MealRouteScreenState extends State<MealRouteScreen> {
                       ),
                       title: Text(p.name),
                       subtitle: Text(
-                        "Меню: ${p.menu.where((d) => _selectedDishes.contains(d)).join(', ')}",
+                        AppStrings.mealMenuItems(
+                          p.menu
+                              .where((d) => _selectedDishes.contains(d))
+                              .join(', '),
+                        ),
                       ),
                     );
                   },

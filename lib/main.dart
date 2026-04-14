@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/constants/app_strings.dart';
 import 'ui/screens/decision_tree_screen.dart';
 import 'ui/screens/food_zones_screen.dart';
 import 'ui/screens/navigation_screen.dart';
@@ -15,7 +16,7 @@ class TopKartaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Top Karta (ТГУ)',
+      title: AppStrings.appTitle,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF005AAB)),
         useMaterial3: true,
@@ -61,17 +62,23 @@ class _MainScreenState extends State<MainScreen> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.restaurant),
-            label: 'Зоны еды',
+            label: AppStrings.tabFoodZones,
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Навигация'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: AppStrings.tabNavigation,
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_basket),
-            label: 'Маршрут',
+            label: AppStrings.tabRoute,
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.hiking), label: 'Тур'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.hiking),
+            label: AppStrings.tabTour,
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_tree),
-            label: 'Дерево',
+            label: AppStrings.tabTree,
           ),
         ],
         currentIndex: _selectedIndex,

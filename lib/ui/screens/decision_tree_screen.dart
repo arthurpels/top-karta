@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/app_strings.dart';
 import '../../core/decision_tree/decision_tree.dart';
 
 class DecisionTreeScreen extends StatefulWidget {
@@ -94,7 +95,7 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Дерево решений (ID3)')),
+      appBar: AppBar(title: const Text(AppStrings.decisionTreeTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -102,7 +103,7 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSectionCard(
-                title: 'Обучающая выборка (CSV)',
+                title: AppStrings.decisionTrainSample,
                 icon: Icons.dataset,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,7 +114,7 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                       maxLines: 14,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'location,budget,...,recommended_place',
+                        hintText: AppStrings.decisionCsvHint,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -122,14 +123,14 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                         ElevatedButton.icon(
                           onPressed: _trainModel,
                           icon: const Icon(Icons.account_tree),
-                          label: const Text('Обучить дерево'),
+                          label: const Text(AppStrings.decisionTrainButton),
                         ),
                         const SizedBox(width: 8),
                         if (_activeModel != null)
                           OutlinedButton.icon(
                             onPressed: _predict,
                             icon: const Icon(Icons.play_arrow),
-                            label: const Text('Пересчитать'),
+                            label: const Text(AppStrings.decisionRecalcButton),
                           ),
                       ],
                     ),
@@ -142,22 +143,25 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
               ],
               if (_activeModel != null) ...[
                 _buildSectionCard(
-                  title: 'Сжатие дерева (bonus)',
+                  title: AppStrings.decisionPruningTitle,
                   icon: Icons.compress,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Text('Режим:'),
+                          const Text(AppStrings.decisionModeLabel),
                           const SizedBox(width: 8),
                           SegmentedButton<bool>(
                             segments: const [
                               ButtonSegment(
                                 value: false,
-                                label: Text('Полное'),
+                                label: Text(AppStrings.decisionModeFull),
                               ),
-                              ButtonSegment(value: true, label: Text('Сжатое')),
+                              ButtonSegment(
+                                value: true,
+                                label: Text(AppStrings.decisionModePruned),
+                              ),
                             ],
                             selected: {_usePruned},
                             onSelectionChanged: (selected) {
@@ -170,7 +174,7 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text('Макс. глубина сжатого: $_maxPrunedDepth'),
+                      Text(AppStrings.decisionMaxPrunedDepth(_maxPrunedDepth)),
                       Slider(
                         min: 1,
                         max: 8,
@@ -189,7 +193,7 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                   ),
                 ),
                 _buildSectionCard(
-                  title: 'Ввод признаков',
+                  title: AppStrings.decisionFeaturesTitle,
                   icon: Icons.tune,
                   child: Column(
                     children: _activeModel!.featureOrder.map((feature) {
@@ -252,7 +256,7 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                 ),
                 if (_prediction != null) ...[
                   _buildSectionCard(
-                    title: 'Результат',
+                    title: AppStrings.decisionResultTitle,
                     icon: Icons.check_circle_outline,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +273,9 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'Рекомендованное место: ${_prediction!.label}',
+                            AppStrings.decisionRecommendedPlace(
+                              _prediction!.label,
+                            ),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF005AAB),
@@ -278,7 +284,7 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                         ),
                         const SizedBox(height: 10),
                         const Text(
-                          'Путь по дереву:',
+                          AppStrings.decisionPathTitle,
                           style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 6),
@@ -307,7 +313,7 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
                   ),
                 ],
                 _buildSectionCard(
-                  title: 'Граф дерева',
+                  title: AppStrings.decisionGraphTitle,
                   icon: Icons.hub,
                   child: _DecisionNodeGraph(
                     node: _activeModel!.root,
@@ -376,15 +382,23 @@ class _DecisionTreeScreenState extends State<DecisionTreeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Полное: узлов ${full.nodeCount}, листьев ${full.leafCount}, глубина ${full.depth}',
+            AppStrings.decisionFullStats(
+              full.nodeCount,
+              full.leafCount,
+              full.depth,
+            ),
             style: const TextStyle(fontSize: 12),
           ),
           Text(
-            'Сжатое: узлов ${pruned.nodeCount}, листьев ${pruned.leafCount}, глубина ${pruned.depth}',
+            AppStrings.decisionPrunedStats(
+              pruned.nodeCount,
+              pruned.leafCount,
+              pruned.depth,
+            ),
             style: const TextStyle(fontSize: 12),
           ),
           Text(
-            'Сокращение узлов: ${nodeReduction.toStringAsFixed(1)}%',
+            AppStrings.decisionNodeReduction(nodeReduction),
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],
@@ -442,8 +456,10 @@ class _DecisionNodeGraph extends StatelessWidget {
               Flexible(
                 child: Text(
                   node.isLeaf
-                      ? 'Класс: ${node.label}'
-                      : 'Признак: ${node.splitFeature}',
+                      ? AppStrings.decisionLeafClass(node.label ?? '')
+                      : AppStrings.decisionSplitFeature(
+                          node.splitFeature ?? '',
+                        ),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),

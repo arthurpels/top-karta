@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_strings.dart';
 import '../../data/models/CampusMap.dart';
 import '../../algorithms/astar.dart';
 import '../widgets/navigation_painters.dart';
@@ -91,7 +92,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
         _endPoint = null;
         _path = null;
         _resetSearchState();
-        _statusMessage = 'Выберите точку финиша';
+        _statusMessage = AppStrings.navSelectFinish;
         _iterations = 0;
       } else if (_endPoint == null) {
         _endPoint = (row, col);
@@ -101,7 +102,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
         _endPoint = null;
         _path = null;
         _resetSearchState();
-        _statusMessage = 'Выберите точку финиша';
+        _statusMessage = AppStrings.navSelectFinish;
         _iterations = 0;
       }
     });
@@ -118,7 +119,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
     setState(() {
       _isSearching = true;
-      _statusMessage = 'Поиск маршрута...';
+      _statusMessage = AppStrings.searchingRoute;
       _path = null;
       _resetSearchState();
     });
@@ -149,11 +150,13 @@ class _NavigationScreenState extends State<NavigationScreen> {
         _path = path;
         final distanceMeters = path.length * 3;
         final timeMinutes = (distanceMeters / 83.3).ceil();
-        _statusMessage =
-            'Маршрут найден! ~${distanceMeters}м, ~${timeMinutes} мин\n'
-            'Итераций A*: $_iterations';
+        _statusMessage = AppStrings.navRouteFound(
+          distanceMeters,
+          timeMinutes,
+          _iterations,
+        );
       } else {
-        _statusMessage = 'Маршрут не найден!\nИтераций: $_iterations';
+        _statusMessage = AppStrings.navRouteNotFound(_iterations);
       }
     });
   }
@@ -177,9 +180,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     }
 
     if (_map == null) {
-      return const Scaffold(
-        body: Center(child: Text("Не удалось загрузить карту")),
-      );
+      return const Scaffold(body: Center(child: Text(AppStrings.errorLoadMap)));
     }
 
     final w = _map!.cellSize.toDouble();
@@ -188,7 +189,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Навигация (A*)'),
+        title: const Text(AppStrings.navAppBarTitle),
         elevation: 0,
         actions: [
           IconButton(
@@ -196,20 +197,22 @@ class _NavigationScreenState extends State<NavigationScreen> {
               _animateSearch ? Icons.play_circle : Icons.play_disabled,
             ),
             tooltip: _animateSearch
-                ? 'Анимация включена'
-                : 'Анимация выключена',
+                ? AppStrings.navAnimationOn
+                : AppStrings.navAnimationOff,
             onPressed: () => setState(() => _animateSearch = !_animateSearch),
           ),
           IconButton(
             icon: Icon(_isEditMode ? Icons.edit : Icons.edit_note),
             color: _isEditMode ? Colors.orange : null,
-            tooltip: _isEditMode ? 'Режим редактирования' : 'Обычный режим',
+            tooltip: _isEditMode
+                ? AppStrings.navEditMode
+                : AppStrings.navNormalMode,
             onPressed: () => setState(() => _isEditMode = !_isEditMode),
           ),
           if (_startPoint != null || _customObstacles.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'Сбросить всё',
+              tooltip: AppStrings.navResetAll,
               onPressed: _resetPath,
             ),
         ],
@@ -233,7 +236,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                       children: [
                         Positioned.fill(
                           child: Image.asset(
-                            'assets/map.png',
+                            AppStrings.mapAssetPath,
                             fit: BoxFit.fill,
                             filterQuality: FilterQuality.high,
                           ),
@@ -273,7 +276,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                             child: const _MapPin(
                               color: Colors.green,
                               icon: Icons.flag,
-                              label: 'Старт',
+                              label: AppStrings.navStartLabel,
                             ),
                           ),
 
@@ -284,7 +287,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                             child: const _MapPin(
                               color: Colors.red,
                               icon: Icons.location_on,
-                              label: 'Финиш',
+                              label: AppStrings.navFinishLabel,
                             ),
                           ),
                       ],
@@ -319,7 +322,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                           SizedBox(width: 12),
-                          Text('Ищем маршрут...'),
+                          Text(AppStrings.searchingRoute),
                         ],
                       )
                     else if (_statusMessage != null)
@@ -353,7 +356,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Нажмите на карту, чтобы выбрать точку старта',
+                              AppStrings.navTapForStart,
                               style: const TextStyle(fontSize: 14),
                             ),
                           ),

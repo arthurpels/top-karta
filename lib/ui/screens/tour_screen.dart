@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/constants/app_strings.dart';
 import '../../data/models/CampusMap.dart';
 import '../../data/models/Landmark.dart';
 import '../../services/tour_service.dart';
@@ -38,7 +39,9 @@ class _TourScreenState extends State<TourScreen> {
   Future<void> _loadData() async {
     try {
       final mapData = await CampusMap.load();
-      final landmarksRaw = await rootBundle.loadString('assets/landmarks.json');
+      final landmarksRaw = await rootBundle.loadString(
+        AppStrings.landmarksAssetPath,
+      );
       final list = (jsonDecode(landmarksRaw) as List)
           .map((e) => Landmark.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -56,9 +59,9 @@ class _TourScreenState extends State<TourScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Ошибка загрузки данных: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${AppStrings.loadingDataErrorPrefix}$e')),
+      );
     }
   }
 
@@ -182,7 +185,7 @@ class _TourScreenState extends State<TourScreen> {
             children: [
               Icon(Icons.flag, color: Colors.green, size: 30),
               Text(
-                'Старт',
+                AppStrings.tourStartLabel,
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
@@ -203,11 +206,11 @@ class _TourScreenState extends State<TourScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_map == null) {
-      return const Center(child: Text('Не удалось загрузить карту'));
+      return const Center(child: Text(AppStrings.errorLoadMap));
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Тур по роще (ACO)')),
+      appBar: AppBar(title: const Text(AppStrings.tourAppBarTitle)),
       body: Stack(
         children: [
           GestureDetector(
@@ -237,7 +240,7 @@ class _TourScreenState extends State<TourScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Достопримечательности',
+                      AppStrings.tourLandmarksTitle,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -264,7 +267,11 @@ class _TourScreenState extends State<TourScreen> {
                     const SizedBox(height: 8),
                     if (_progress != null && _isRunning)
                       Text(
-                        'Итерация ${_progress!.iteration}/${_progress!.maxIterations}, лучшая оценка: ${_progress!.bestCost.toStringAsFixed(1)}',
+                        AppStrings.tourIterationProgress(
+                          _progress!.iteration,
+                          _progress!.maxIterations,
+                          _progress!.bestCost,
+                        ),
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
@@ -272,7 +279,10 @@ class _TourScreenState extends State<TourScreen> {
                       ),
                     if (_result != null)
                       Text(
-                        'Маршрут найден: ${_result!.orderedLandmarks.length} точек, стоимость ${_result!.costUnits.toStringAsFixed(1)}',
+                        AppStrings.tourRouteFound(
+                          _result!.orderedLandmarks.length,
+                          _result!.costUnits,
+                        ),
                         style: const TextStyle(fontSize: 12),
                       ),
                     const SizedBox(height: 8),
@@ -298,8 +308,8 @@ class _TourScreenState extends State<TourScreen> {
                                 : const Icon(Icons.hiking),
                             label: Text(
                               _isRunning
-                                  ? 'Считаем...'
-                                  : 'Построить тур (муравьи)',
+                                  ? AppStrings.mealCalculating
+                                  : AppStrings.tourBuild,
                             ),
                           ),
                         ),
@@ -307,7 +317,7 @@ class _TourScreenState extends State<TourScreen> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Сначала тапни на карту для выбора старта',
+                      AppStrings.tourTapStartHint,
                       style: TextStyle(fontSize: 11, color: Colors.black45),
                     ),
                   ],

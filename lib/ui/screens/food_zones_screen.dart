@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../algorithms/astar.dart';
+import '../../core/constants/app_strings.dart';
 import '../../data/models/CampusMap.dart';
 import '../../data/models/Place.dart';
 import '../../core/clustering/kmeans.dart';
@@ -49,7 +50,9 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
     try {
       final mapData = await CampusMap.load();
 
-      final placesString = await rootBundle.loadString('assets/places.json');
+      final placesString = await rootBundle.loadString(
+        AppStrings.placesAssetPath,
+      );
       final List<dynamic> placesJson = jsonDecode(placesString);
       final places = placesJson.map((p) => Place.fromJson(p)).toList();
 
@@ -265,19 +268,29 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              Text("Тип: \${place.type}"),
-              Text("Время работы: \${place.openTime} - \${place.closeTime}"),
-              Text("Цены: \${place.priceLevel}"),
+              Text(AppStrings.foodZonesName(place.name)),
+              Text(AppStrings.foodZonesType(place.type)),
+              Text(
+                AppStrings.foodZonesWorkingHours(
+                  place.openTime,
+                  place.closeTime,
+                ),
+              ),
+              Text(AppStrings.foodZonesPrices(place.priceLevel)),
               const SizedBox(height: 8),
               Text(
-                "Кластер (по прямой): ${_euclideanPoints[placeIdx].clusterIndex + 1}",
+                AppStrings.foodZonesDirectCluster(
+                  _euclideanPoints[placeIdx].clusterIndex + 1,
+                ),
               ),
               Text(
-                "Кластер (по тропам): ${_walkingPoints[placeIdx].clusterIndex + 1}",
+                AppStrings.foodZonesWalkingCluster(
+                  _walkingPoints[placeIdx].clusterIndex + 1,
+                ),
               ),
               const SizedBox(height: 12),
               const Text(
-                "Меню:",
+                AppStrings.foodZonesMenuTitle,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               Wrap(
@@ -306,15 +319,15 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
     }
 
     if (_map == null) {
-      return const Center(child: Text("Не удалось загрузить карту"));
+      return const Center(child: Text(AppStrings.errorLoadMap));
     }
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           _distanceMode == DistanceMode.euclidean
-              ? 'Зоны еды (Euclidean)'
-              : 'Зоны еды (Walking A*)',
+              ? AppStrings.foodZonesTitleEuclidean
+              : AppStrings.foodZonesTitleWalking,
         ),
         elevation: 0,
         actions: [
@@ -324,11 +337,11 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
               segments: const [
                 ButtonSegment(
                   value: DistanceMode.euclidean,
-                  label: Text('По прямой'),
+                  label: Text(AppStrings.foodZonesByLine),
                 ),
                 ButtonSegment(
                   value: DistanceMode.walking,
-                  label: Text('По тропам'),
+                  label: Text(AppStrings.foodZonesByPaths),
                 ),
               ],
               selected: {_distanceMode},
@@ -361,16 +374,18 @@ class _FoodZonesScreenState extends State<FoodZonesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Зоны питания:',
+                      AppStrings.foodZonesLegendTitle,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    _buildLegendItem('Зона 1 (Запад)', 0),
-                    _buildLegendItem('Зона 2 (Центр)', 1),
-                    _buildLegendItem('Зона 3 (Восток)', 2),
+                    _buildLegendItem(AppStrings.foodZonesLegendZone1, 0),
+                    _buildLegendItem(AppStrings.foodZonesLegendZone2, 1),
+                    _buildLegendItem(AppStrings.foodZonesLegendZone3, 2),
                     const SizedBox(height: 6),
                     Text(
-                      "Меняют кластер: ${_changedClusterIndexes.length}",
+                      AppStrings.foodZonesChangedCount(
+                        _changedClusterIndexes.length,
+                      ),
                       style: const TextStyle(fontSize: 12),
                     ),
                   ],

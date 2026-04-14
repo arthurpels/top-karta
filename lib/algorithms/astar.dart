@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import '../data/models/CampusMap.dart';
+import '../core/constants/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 
@@ -54,7 +55,7 @@ class AStarPathFinder {
   }) async {
     if (!config.isInBounds(stRow, stCol) ||
         !config.isInBounds(endRow, endCol)) {
-      debugPrint('Старт или финиш вне карты');
+      debugPrint(AppStrings.astarOutOfBounds);
       return null;
     }
 
@@ -66,15 +67,17 @@ class AStarPathFinder {
         : _snapToNearestWalkable(endRow, endCol, customObstacles);
 
     if (start == null || end == null) {
-      debugPrint('Не удалось найти ближайшую проходимую точку');
+      debugPrint(AppStrings.astarFailedSnap);
       return null;
     }
 
     if (start != (stRow, stCol)) {
-      debugPrint('Старт смещен с ($stRow, $stCol) на $start');
+      debugPrint(
+        AppStrings.astarStartSnapped(stRow, stCol, start.$1, start.$2),
+      );
     }
     if (end != (endRow, endCol)) {
-      debugPrint('Финиш смещен с ($endRow, $endCol) на $end');
+      debugPrint(AppStrings.astarEndSnapped(endRow, endCol, end.$1, end.$2));
     }
 
     stRow = start.$1;
@@ -113,7 +116,7 @@ class AStarPathFinder {
       }
 
       if (current.row == endRow && current.col == endCol) {
-        debugPrint('Путь найден за $lastIterations итераций!');
+        debugPrint(AppStrings.astarPathFound(lastIterations));
         return _reconstructPath(current);
       }
 
@@ -155,7 +158,7 @@ class AStarPathFinder {
       }
     }
 
-    debugPrint('Путь не найден! Пройдено итераций: $lastIterations');
+    debugPrint(AppStrings.astarPathNotFound(lastIterations));
     return null;
   }
 

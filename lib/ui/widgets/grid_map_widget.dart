@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_strings.dart';
 import '../../data/models/CampusMap.dart';
 import 'pixel_canvas.dart';
 
@@ -38,7 +39,7 @@ class GridMapWidget extends StatelessWidget {
             if (useRealMap)
               Positioned.fill(
                 child: Image.asset(
-                  'assets/map.png',
+                  AppStrings.mapAssetPath,
                   fit: BoxFit.fill,
                   filterQuality: FilterQuality.high,
                 ),

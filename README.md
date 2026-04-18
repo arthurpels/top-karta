@@ -1,17 +1,34 @@
-# tsu_campus_app
+# Top-Karta
 
-A new Flutter project.
+Top-Karta is a Flutter app for campus navigation and food route planning.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- A* route search on the campus grid
+- Food zones clustering (K-Means)
+- Meal route optimization (Genetic Algorithm)
+- Landmark tour optimization (Ant Colony)
+- Decision tree training and prediction demo
 
-A few resources to get you started if this is your first Flutter project:
+## Requirements
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- Flutter SDK 3.x
+- Dart SDK (included with Flutter)
+- Android SDK (for APK build)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Run
+
+```bash
+flutter pub get
+flutter run
+```
+
+## Build APK
+
+```bash
+flutter build apk --release
+```
+
+Result APK path:
+
+`build/app/outputs/flutter-apk/app-release.apk`
